@@ -54,3 +54,13 @@ Tutti i rami devono seguire la convenzione di prefisso:
    - Eseguire review (umana o tramite subagente di code-review).
    - Eseguire il merge tramite **Squash and Merge** per mantenere una cronologia lineare e pulita su `main`.
    - Eliminare il branch dopo il merge.
+
+---
+
+## 3. Gestione delle Skill per Agenti
+
+Le skill del repository sono collocate in `skills/` e distribuite in `.agents/skills/`, `.github/skills/` e `.claude/skills/`.
+
+- Per aggiornare le skill: `npm run skills:update`
+- Per sincronizzare le cartelle degli agenti: `npm run skills:sync`
+- Per verificare la formattazione dei file Markdown: `npm run lint:md`
