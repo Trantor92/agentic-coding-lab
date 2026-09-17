@@ -1,0 +1,19 @@
+{
+  "name": "agentic-coding-lab",
+  "version": "0.1.0",
+  "description": "Laboratorio pubblico per esplorare la collaborazione tra agenti AI e sviluppatori",
+  "scripts": {
+    "skills:sync": "mkdir -p .agents .github .claude && ln -sfn ../skills .agents/skills && ln -sfn ../skills .github/skills && ln -sfn ../skills .claude/skills",
+    "skills:update": "npx skills@latest update && npm run skills:sync",
+    "lint:md": "npx markdownlint-cli '**/*.md' --ignore 'node_modules'",
+    "test": "npm run lint:md"
+  },
+  "keywords": [
+    "agentic-coding",
+    "github-copilot",
+    "skills",
+    "ai-agents"
+  ],
+  "author": "Trantor92",
+  "license": "MIT"
+}
