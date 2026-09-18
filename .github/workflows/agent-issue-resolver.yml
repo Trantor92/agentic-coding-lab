@@ -29,15 +29,17 @@ jobs:
           ISSUE_TITLE: ${{ github.event.issue.title }}
         run: |
           echo "Processing issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}"
-          
-          # Aggiunge un commento di presa in carico con istruzioni per l'agente
-          gh issue comment "$ISSUE_NUMBER" --body "🤖 **Agent Dispatcher**: L'issue è stata etichettata come \`ready-for-agent\`.
+
+          BODY=$(cat <<EOF
+          🤖 **Agent Dispatcher**: L'issue è stata etichettata come \`ready-for-agent\`.
 
           - **Branch di lavoro assegnato**: \`agent/issue-${ISSUE_NUMBER}\`
           - **Strategia di merge richiesta**: Squash and Merge
-          - **Istruzioni operative**: Consulta \`AGENTS.md\` e \`skills/tdd/SKILL.md\` prima di procedere.
+          - **Istruzioni operative**: Consulta \`AGENTS.md\` e \`skills/tdd/SKILL.md\`.
 
-          @copilot puoi procedere con la risoluzione di questa issue creando il branch dedicato e aprendo la Pull Request collegata."
+          @copilot procedi con la risoluzione creando il branch e la Pull Request.
+          EOF
+          )
 
-          # Assegna la issue all'agente o al maintainer se configurato
+          gh issue comment "$ISSUE_NUMBER" --body "$BODY"
           echo "Notifica inviata con successo per l'issue #${ISSUE_NUMBER}."
