@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "description": "Laboratorio pubblico per esplorare la collaborazione tra agenti AI e sviluppatori",
   "scripts": {
-    "skills:sync": "mkdir -p .agents .github .claude && ln -sfn ../skills .agents/skills && ln -sfn ../skills .github/skills && ln -sfn ../skills .claude/skills",
-    "skills:update": "npx skills@latest update && npm run skills:sync",
+    "skills:sync": "node scripts/skills-manager.mjs sync",
+    "skills:verify": "node scripts/skills-manager.mjs verify",
+    "skills:update": "node scripts/skills-manager.mjs update",
     "lint:md": "npx markdownlint-cli '**/*.md' --ignore 'node_modules'",
     "lint:yaml": "yamllint .",
-    "test": "npm run lint:md && npm run lint:yaml"
+    "test:structure": "node scripts/validate-structure.mjs",
+    "test": "npm run lint:md && npm run lint:yaml && npm run test:structure"
   },
   "keywords": [
     "agentic-coding",

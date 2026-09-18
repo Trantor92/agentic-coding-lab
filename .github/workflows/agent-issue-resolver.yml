@@ -22,24 +22,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Acknowledge and Assign Agent
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
         run: |
-          echo "Processing issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}"
-
-          BODY=$(cat <<EOF
-          🤖 **Agent Dispatcher**: L'issue è stata etichettata come \`ready-for-agent\`.
-
-          - **Branch di lavoro assegnato**: \`agent/issue-${ISSUE_NUMBER}\`
-          - **Strategia di merge richiesta**: Squash and Merge
-          - **Istruzioni operative**: Consulta \`AGENTS.md\` e \`skills/tdd/SKILL.md\`.
-
-          @copilot procedi con la risoluzione creando il branch e la Pull Request.
-          EOF
-          )
-
-          gh issue comment "$ISSUE_NUMBER" --body "$BODY"
-          echo "Notifica inviata con successo per l'issue #${ISSUE_NUMBER}."
+          node scripts/dispatch-agent.mjs --issue "$ISSUE_NUMBER" --title "$ISSUE_TITLE"

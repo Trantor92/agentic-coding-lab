@@ -52,10 +52,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check required files exist
-        run: |
-          test -f README.md || (echo "Missing README.md" && exit 1)
-          test -f CONTRIBUTING.md || (echo "Missing CONTRIBUTING.md" && exit 1)
-          test -f LICENSE || (echo "Missing LICENSE" && exit 1)
-          test -f .github/PULL_REQUEST_TEMPLATE.md || (echo "Missing PR template" && exit 1)
-          echo "All structural foundation files verified successfully."
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate structure and skills integrity
+        run: npm run test:structure
