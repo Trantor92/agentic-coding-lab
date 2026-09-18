@@ -17,3 +17,4 @@
 - [ ] I file modificati sono stati verificati in locale (linting, sintassi YAML/Markdown).
 - [ ] La documentazione collegata è stata aggiornata se necessario.
 - [ ] Tutti i check automatici di CI sono passati con successo.
+- [ ] Merge pianificato esclusivamente tramite **Squash and Merge**.

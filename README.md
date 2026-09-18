@@ -14,9 +14,9 @@ coding agent), esplorando pattern come:
 
 - istruzioni persistenti per gli agenti (`AGENTS.md`, `.github/copilot-instructions.md`)
 - skill ingegneristiche e di produttività integrate e versionate (`skills/`, `.agents/skills/`, `.github/skills/`)
-- workflow di collaborazione uomo-agente (issue, PR, code review automatizzata)
-- convenzioni di progetto pensate per essere comprese e rispettate dagli agenti
-- automazioni (CI/CD, hook, agenti dedicati a task specifici)
+- workflow di collaborazione uomo-agente (issue, PR, code review automatizzata, Squash & Merge)
+- convenzioni di progetto pensate per essere comprese e rispettate dagli agenti (`CONTRIBUTING.md`)
+- automazioni per risoluzione automatica delle issue con agenti (`.github/workflows/agent-issue-resolver.yml`, `docs/agents/automation.md`)
 
 ## Skill Integrate & Riproducibilità
 

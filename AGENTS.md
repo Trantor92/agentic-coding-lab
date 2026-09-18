@@ -34,6 +34,27 @@ Il repository include le **Engineering & Productivity Skills** (originate da `ma
 
 ## 2. Regole di Esecuzione per gli Agenti
 
-1. **Branching Strategy**: Seguire sempre **GitHub Flow** descritto in `CONTRIBUTING.md`. Non committare direttamente su `main`.
+1. **Branching Strategy**: Seguire sempre **GitHub Flow** descritto in `CONTRIBUTING.md`. Non committare direttamente su `main`. Usare il prefisso `agent/` per i rami generati autonomamente.
 2. **Consultazione delle Skill**: Prima di implementare funzionalità complesse o refactoring, consultare i file `SKILL.md` pertinenti.
 3. **Verifica Locale**: Eseguire `npm test` o i linter prima di considerare completato un task.
+4. **Merge Strategy**: Tutte le Pull Request devono essere integrate tramite **Squash and Merge**.
+
+---
+
+## Agent skills & Automations
+
+### Issue tracker
+
+GitHub issues via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Canonical triage roles mapped 1:1 (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Agent Automation & Issue Resolving
+
+Flusso automatizzato di presa in carico delle issue con label `ready-for-agent`. See `docs/agents/automation.md`.
+
+### Domain docs
+
+Single-context (`CONTEXT.md` + `docs/adr/` at repo root). See `docs/agents/domain.md`.

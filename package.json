@@ -6,7 +6,8 @@
     "skills:sync": "mkdir -p .agents .github .claude && ln -sfn ../skills .agents/skills && ln -sfn ../skills .github/skills && ln -sfn ../skills .claude/skills",
     "skills:update": "npx skills@latest update && npm run skills:sync",
     "lint:md": "npx markdownlint-cli '**/*.md' --ignore 'node_modules'",
-    "test": "npm run lint:md"
+    "lint:yaml": "yamllint .",
+    "test": "npm run lint:md && npm run lint:yaml"
   },
   "keywords": [
     "agentic-coding",

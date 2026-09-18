@@ -1,0 +1,45 @@
+name: Agent Issue Resolver
+
+on:
+  issues:
+    types: [opened, labeled]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  dispatch-agent:
+    if: >
+      github.event.label.name == 'ready-for-agent' ||
+      contains(github.event.issue.labels.*.name, 'ready-for-agent')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Acknowledge and Assign Agent
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          echo "Processing issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}"
+
+          BODY=$(cat <<EOF
+          🤖 **Agent Dispatcher**: L'issue è stata etichettata come \`ready-for-agent\`.
+
+          - **Branch di lavoro assegnato**: \`agent/issue-${ISSUE_NUMBER}\`
+          - **Strategia di merge richiesta**: Squash and Merge
+          - **Istruzioni operative**: Consulta \`AGENTS.md\` e \`skills/tdd/SKILL.md\`.
+
+          @copilot procedi con la risoluzione creando il branch e la Pull Request.
+          EOF
+          )
+
+          gh issue comment "$ISSUE_NUMBER" --body "$BODY"
+          echo "Notifica inviata con successo per l'issue #${ISSUE_NUMBER}."

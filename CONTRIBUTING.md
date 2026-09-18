@@ -52,12 +52,27 @@ Tutti i rami devono seguire la convenzione di prefisso:
 
 5. **Review e Merge**:
    - Eseguire review (umana o tramite subagente di code-review).
-   - Eseguire il merge tramite **Squash and Merge** per mantenere una cronologia lineare e pulita su `main`.
-   - Eliminare il branch dopo il merge.
+   - Eseguire il merge **esclusivamente** tramite **Squash and Merge** per mantenere una cronologia lineare, atomica e pulita su `main`.
+   - Eliminare il branch subito dopo il merge.
 
 ---
 
-## 3. Gestione delle Skill per Agenti
+## 3. Configurazione del Repository su GitHub (Impostazioni Consigliate)
+
+Per garantire che la strategia **Squash and Merge** sia applicata in modo rigido e automatico:
+
+1. Vai su **Settings** del repository su GitHub.
+2. Nella sezione **General** scorri fino a **Pull Requests**:
+   - Abilita solo **Allow squash merging** (deseleziona *Allow merge commits* e *Allow rebase merging*).
+   - Imposta il default per il messaggio di squash su: *Pull request title and commit details* o *Pull request title only*.
+   - Abilita l'opzione **Automatically delete head branches** per eliminare automaticamente i branch temporanei dopo il merge.
+3. Nella sezione **Branches** (se configurate regole di Branch Protection / Rulesets su `main`):
+   - Richiedi una Pull Request prima del merge.
+   - Richiedi che i check di CI abbiano successo prima del merge.
+
+---
+
+## 4. Gestione delle Skill per Agenti
 
 Le skill del repository sono collocate in `skills/` e distribuite in `.agents/skills/`, `.github/skills/` e `.claude/skills/`.
 

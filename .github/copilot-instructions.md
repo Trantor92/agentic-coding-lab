@@ -19,3 +19,5 @@ Quando affronti task rilevanti, consulta e applica le metodologie definite in:
 1. **Branching**: Rispetta la branching strategy in `CONTRIBUTING.md` (`feat/`, `fix/`, `ci/`, `docs/`, `agent/`).
 2. **Messaggi di Commit**: Usa Conventional Commits (`feat:`, `fix:`, `ci:`, `docs:`).
 3. **Validazione**: Esegui `npm run lint:md` o i controlli definiti in `.github/workflows/ci.yml` per verificare le modifiche.
+4. **Merge Strategy**: Adotta e promuovi sempre **Squash and Merge** per l'integrazione delle Pull Request su `main`.
+5. **Risoluzione Issue**: Quando prendi in carico issue contrassegnate con `ready-for-agent`, crea il branch `agent/issue-<numero>`, implementa la soluzione e apri una Pull Request collegata con `Closes #<numero>`.
