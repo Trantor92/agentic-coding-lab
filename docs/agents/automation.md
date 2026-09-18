@@ -72,4 +72,9 @@ In base agli strumenti abilitati sul tuo account/organizzazione:
   gh pr create --fill
   ```
 
-- **Custom Runner / CI Action**: Il workflow può essere esteso per richiamare direttamente uno script o un container AI automatizzato.
+- **Custom Runner / CI Action**: Il workflow richiama il modulo `scripts/dispatch-agent.mjs` che gestisce la logica di notifica e formattazione con supporto `--dry-run` per i test locali:
+
+  ```bash
+  # Test locale del dispatcher in modalità dry-run
+  node scripts/dispatch-agent.mjs --issue 42 --title "Esempio task" --dry-run
+  ```

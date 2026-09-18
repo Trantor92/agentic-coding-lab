@@ -57,4 +57,4 @@ Flusso automatizzato di presa in carico delle issue con label `ready-for-agent`.
 
 ### Domain docs
 
-Single-context (`CONTEXT.md` + `docs/adr/` at repo root). See `docs/agents/domain.md`.
+Single-context repository. Refer to the canonical domain glossary in `CONTEXT.md` and architecture decisions in `docs/adr/`. See `docs/agents/domain.md`.
