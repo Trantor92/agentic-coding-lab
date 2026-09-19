@@ -51,14 +51,69 @@ export function buildAgentCliCommand({ adapter = "copilot", model, prompt }) {
   if (adapter === "claude") {
     return {
       command: "claude",
-      args: ["-p", prompt, "--model", concreteModel],
+      args: ["-p", prompt, "--model", concreteModel, "--dangerously-skip-permissions"],
     };
   }
 
   return {
     command: "copilot",
-    args: ["-p", prompt, "--model", concreteModel],
+    args: ["-p", prompt, "--model", concreteModel, "--allow-all-tools", "--no-ask-user"],
   };
+}
+
+/**
+ * Fetch issue metadata from GitHub CLI when not provided in arguments.
+ */
+export function fetchIssueMetadata({ issueNumber, dryRun = false }) {
+  if (!issueNumber || dryRun) {
+    return { title: "", body: "", modelProfile: null };
+  }
+
+  try {
+    const raw = execFileSync(
+      "gh",
+      ["issue", "view", String(issueNumber), "--json", "title,body,labels"],
+      { encoding: "utf8" },
+    );
+    const data = JSON.parse(raw);
+    const labels = Array.isArray(data.labels) ? data.labels.map((l) => l.name) : [];
+    const modelProfile = labels.includes("model:smart")
+      ? "smart"
+      : labels.includes("model:fast")
+        ? "fast"
+        : null;
+
+    return {
+      title: data.title || "",
+      body: data.body || "",
+      modelProfile,
+    };
+  } catch {
+    return { title: "", body: "", modelProfile: null };
+  }
+}
+
+/**
+ * Ensure all agent modifications are committed and verify branch has commits against main.
+ */
+export function ensureGitCommit({ issueNumber, title = "" }) {
+  const statusOut = execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim();
+  if (statusOut) {
+    console.log("📝 Staging and committing changes made by agent...");
+    execFileSync("git", ["add", "-A"], { stdio: "inherit" });
+    const commitMsg = `feat(agent): resolve issue #${issueNumber}${title ? ` - ${title}` : ""}\n\nCo-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`;
+    execFileSync("git", ["commit", "-m", commitMsg], { stdio: "inherit" });
+  }
+
+  const commitCount = Number(
+    execFileSync("git", ["rev-list", "--count", "main..HEAD"], { encoding: "utf8" }).trim(),
+  );
+
+  if (commitCount === 0) {
+    throw new Error(`No commits or file changes were produced for issue #${issueNumber}.`);
+  }
+
+  return commitCount;
 }
 
 /**
@@ -139,11 +194,25 @@ export function parseHarnessArgs(argv = process.argv.slice(2), env = process.env
  * Main execution harness.
  */
 export function runAgentHarness(options = parseHarnessArgs()) {
-  const { issueNumber, title, body, runner, adapter, modelProfile, dryRun } = options;
+  let { issueNumber, title, body, runner, adapter, modelProfile, dryRun } = options;
 
   if (!issueNumber || isNaN(issueNumber)) {
     console.error("❌ Error: A valid numeric --issue number is required.");
     return 1;
+  }
+
+  // Auto-fetch metadata if title or body is missing
+  if (!title || !body) {
+    const fetched = fetchIssueMetadata({ issueNumber, dryRun });
+    if (!title && fetched.title) {
+      title = fetched.title;
+    }
+    if (!body && fetched.body) {
+      body = fetched.body;
+    }
+    if (!options.modelProfile && fetched.modelProfile) {
+      modelProfile = fetched.modelProfile;
+    }
   }
 
   const model = resolveModel({ adapter, modelProfile });
@@ -182,11 +251,15 @@ export function runAgentHarness(options = parseHarnessArgs()) {
       throw new Error(`Agent CLI execution failed with code ${agentRes.status}`);
     }
 
-    // 3. Run validation tests
+    // 3. Stage & Commit any changes and verify commits exist
+    console.log("📦 Verifying changes and commits...");
+    ensureGitCommit({ issueNumber, title });
+
+    // 4. Run validation tests
     console.log("🧪 Running local test suite (npm test)...");
     execFileSync("npm", ["test"], { stdio: "inherit" });
 
-    // 4. Push branch and create Pull Request
+    // 5. Push branch and create Pull Request
     console.log("📤 Pushing branch and creating Pull Request...");
     execFileSync("git", ["push", "-u", "origin", targetBranch], { stdio: "inherit" });
 

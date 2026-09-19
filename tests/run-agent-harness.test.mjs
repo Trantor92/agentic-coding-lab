@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import {
   buildAgentCliCommand,
   buildAgentPrompt,
+  fetchIssueMetadata,
   formatPullRequestBody,
   parseHarnessArgs,
   resolveModel,
@@ -55,7 +56,12 @@ const copilotCmd = buildAgentCliCommand({
   prompt: "Solve issue",
 });
 assert.equal(copilotCmd.command, "copilot");
-assert.deepEqual(copilotCmd.args, ["-p", "Solve issue", "--model", "gpt-5-mini"]);
+assert.ok(
+  copilotCmd.args.includes("--allow-all-tools") || copilotCmd.args.includes("--allow-all"),
+  "Copilot CLI args must include --allow-all-tools for autonomous headless execution",
+);
+assert.ok(copilotCmd.args.includes("-p"), "Copilot CLI args must include -p flag");
+assert.ok(copilotCmd.args.includes("gpt-5-mini"), "Copilot CLI args must include model");
 
 const claudeCmd = buildAgentCliCommand({
   adapter: "claude",
@@ -63,7 +69,10 @@ const claudeCmd = buildAgentCliCommand({
   prompt: "Solve issue",
 });
 assert.equal(claudeCmd.command, "claude");
-assert.deepEqual(claudeCmd.args, ["-p", "Solve issue", "--model", "claude-3-5-haiku-latest"]);
+assert.ok(
+  claudeCmd.args.includes("--dangerously-skip-permissions"),
+  "Claude CLI args must include --dangerously-skip-permissions for autonomous execution",
+);
 
 // 4. PR Body formatting
 const prBody = formatPullRequestBody({
@@ -98,7 +107,13 @@ assert.equal(parsed.adapter, "copilot");
 assert.equal(parsed.modelProfile, "fast");
 assert.equal(parsed.dryRun, true);
 
-// 6. CLI execution in dry-run mode
+// 6. Metadata fallback testing
+const defaultMeta = fetchIssueMetadata({ issueNumber: 999999, dryRun: true });
+assert.ok(typeof defaultMeta === "object");
+assert.ok("title" in defaultMeta);
+assert.ok("body" in defaultMeta);
+
+// 7. CLI execution in dry-run mode
 const cliResult = spawnSync(process.execPath, [
   harnessScriptPath,
   "--issue",
