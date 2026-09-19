@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { execSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 
 /**
  * Format the dispatch comment body for an agent.
@@ -39,9 +39,37 @@ export function dispatchAgent({ issueNumber, title = "", branchName, dryRun = fa
   }
 
   try {
-    execSync(`gh issue comment "${num}" --body "${body.replace(/"/g, '\\"')}"`, {
+    // Check if a dispatch comment already exists to guarantee idempotency
+    try {
+      const existingComments = execFileSync("gh", ["issue", "view", String(num), "--json", "comments", "-q", ".comments.[].body"], {
+        encoding: "utf-8",
+      });
+      if (existingComments.includes("🤖 **Agent Dispatcher**")) {
+        console.log(`ℹ️  Agent Dispatcher comment already present on issue #${num}. Skipping duplicate comment.`);
+        return { success: true, skipped: true, body };
+      }
+    } catch (checkErr) {
+      console.warn(`⚠️ Could not check existing comments: ${checkErr.message}. Proceeding with dispatch.`);
+    }
+
+    // Safely execute gh issue comment with spawnSync / stdin avoiding shell backtick escaping bugs
+    const commentRes = spawnSync("gh", ["issue", "comment", String(num), "--body", body], {
       stdio: "inherit",
     });
+
+    if (commentRes.status !== 0) {
+      throw new Error(`gh issue comment exited with code ${commentRes.status}`);
+    }
+
+    // Attempt to assign Copilot as assignee if available
+    try {
+      spawnSync("gh", ["issue", "edit", String(num), "--add-assignee", "copilot"], {
+        stdio: "inherit",
+      });
+    } catch {
+      // Non-blocking if assignment is not supported in the current org tier
+    }
+
     console.log(`✅ Notification sent successfully for issue #${num}.`);
     return { success: true, dryRun: false, body };
   } catch (err) {

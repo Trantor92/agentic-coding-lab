@@ -8,8 +8,9 @@
     "skills:update": "node scripts/skills-manager.mjs update",
     "lint:md": "npx markdownlint-cli '**/*.md' --ignore 'node_modules'",
     "lint:yaml": "yamllint .",
+    "test:unit": "node tests/dispatch-agent.test.mjs",
     "test:structure": "node scripts/validate-structure.mjs",
-    "test": "npm run lint:md && npm run lint:yaml && npm run test:structure"
+    "test": "npm run lint:md && npm run lint:yaml && npm run test:unit && npm run test:structure"
   },
   "keywords": [
     "agentic-coding",
