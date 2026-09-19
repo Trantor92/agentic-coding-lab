@@ -66,13 +66,16 @@ GitHub Copilot Coding Agent richiede un token licenziato per essere invocato aut
    - **Color**: `#0E8A16` (verde)
    - **Description**: `Issue specificata e pronta per essere presa in carico da un agente AI`
 
-### D. Impostazioni di Squash and Merge
+### D. Impostazioni di Squash and Merge e Gestione PR Draft
 
 1. Vai su **Settings** $\rightarrow$ **General**.
 2. Scorri fino alla sezione **Pull Requests**:
    - Spunta solo **Allow squash merging**.
    - Deseleziona *Allow merge commits* e *Allow rebase merging*.
    - Abilita **Automatically delete head branches**.
+
+> **Nota su Draft / WIP Pull Requests**:
+> Le pipeline di validazione CI (`ci.yml`) e conformità PR (`pr-compliance.yml`) sono configurate per ignorare le PR in stato **Draft**. I controlli si attivano automaticamente quando la PR viene contrassegnata come pronta per la revisione (*Ready for review*).
 
 ---
 
