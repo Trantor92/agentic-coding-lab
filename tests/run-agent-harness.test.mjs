@@ -6,10 +6,10 @@ import {
   buildAgentCliCommand,
   buildAgentPrompt,
   fetchIssueMetadata,
-  formatPullRequestBody,
   parseHarnessArgs,
   resolveModel,
 } from "../scripts/run-agent-harness.mjs";
+import { buildPrBody } from "../scripts/validate-pr.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const harnessScriptPath = path.resolve(__dirname, "../scripts/run-agent-harness.mjs");
@@ -75,7 +75,7 @@ assert.ok(
 );
 
 // 4. PR Body formatting
-const prBody = formatPullRequestBody({
+const prBody = buildPrBody({
   issueNumber: 42,
   title: "Add feature X",
   adapter: "copilot",
