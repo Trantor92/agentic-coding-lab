@@ -16,6 +16,9 @@ const requiredFiles = [
   "CONTEXT.md",
   "AGENTS.md",
   "package.json",
+  "scripts/validate-pr.mjs",
+  "tests/validate-pr.test.mjs",
+  ".github/workflows/pr-compliance.yml",
 ];
 
 console.log("🏗️  Validating project structure and invariants...");
@@ -29,6 +32,31 @@ for (const relPath of requiredFiles) {
   } else {
     console.log(`  ✓ Found ${relPath}`);
   }
+}
+
+const packageJson = JSON.parse(fs.readFileSync(path.join(rootDir, "package.json"), "utf8"));
+const testPrScript = packageJson.scripts?.["test:pr"] || "";
+const workflowContents = fs.readFileSync(
+  path.join(rootDir, ".github/workflows/pr-compliance.yml"),
+  "utf8",
+);
+
+if (!testPrScript.includes("node scripts/validate-pr.mjs") || !testPrScript.includes("--dry-run")) {
+  errors.push("package.json must define a test:pr script that runs scripts/validate-pr.mjs in dry-run mode.");
+} else {
+  console.log("  ✓ Found expected package.json test:pr script");
+}
+
+if (!packageJson.scripts?.["test:unit"]) {
+  errors.push("package.json must define a test:unit script for PR validator coverage.");
+} else {
+  console.log("  ✓ Found package.json test:unit script");
+}
+
+if (!workflowContents.includes("Fail job when PR is not compliant")) {
+  errors.push("PR compliance workflow must fail the job when validation reports a non-zero exit code.");
+} else {
+  console.log("  ✓ PR compliance workflow propagates validation failures");
 }
 
 if (errors.length > 0) {

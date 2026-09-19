@@ -115,19 +115,21 @@ export function updateSkills() {
   verifySkills();
 }
 
-const command = process.argv[2] || "verify";
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const command = process.argv[2] || "verify";
 
-switch (command) {
-  case "sync":
-    syncSkills();
-    break;
-  case "verify":
-    verifySkills();
-    break;
-  case "update":
-    updateSkills();
-    break;
-  default:
-    console.error(`Unknown command: ${command}. Use 'sync', 'verify', or 'update'.`);
-    process.exit(1);
+  switch (command) {
+    case "sync":
+      syncSkills();
+      break;
+    case "verify":
+      verifySkills();
+      break;
+    case "update":
+      updateSkills();
+      break;
+    default:
+      console.error(`Unknown command: ${command}. Use 'sync', 'verify', or 'update'.`);
+      process.exit(1);
+  }
 }
