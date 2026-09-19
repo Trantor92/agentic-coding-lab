@@ -31,6 +31,13 @@ Il repository include le skill ingegneristiche di [mattpocock/skills](https://gi
   npm run skills:sync    # Sincronizza le skill tra le cartelle degli agenti
   ```
 
+## Automazioni & Risoluzione Issue
+
+Il repository supporta la presa in carico e la risoluzione automatica delle issue:
+
+- **Etichetta `ready-for-agent`**: applicando questa label a una issue, il workflow `.github/workflows/agent-issue-resolver.yml` assegna automaticamente il task a GitHub Copilot Coding Agent o notifica gli agenti via CLI.
+- **Configurazione e Setup**: Consulta la guida dettagliata passo-passo in [`docs/agents/automation.md`](docs/agents/automation.md) per impostare i permessi di Actions, il secret `COPILOT_PAT` e le opzioni di Squash & Merge.
+
 ## Stato
 
 🚧 In evoluzione — infrastruttura di base, CI/CD, branching strategy e catalogo skill configurati.

@@ -27,8 +27,17 @@ jobs:
 
       - name: Acknowledge and Assign Agent
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.COPILOT_PAT || secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
         run: |
           node scripts/dispatch-agent.mjs --issue "$ISSUE_NUMBER" --title "$ISSUE_TITLE"
+
+      - name: Assign Issue to Copilot Coding Agent
+        if: env.COPILOT_PAT != ''
+        env:
+          COPILOT_PAT: ${{ secrets.COPILOT_PAT }}
+        uses: otto-de/assign_issue_toCopilot_action@v1.0.1
+        with:
+          issue_number: ${{ github.event.issue.number }}
+          github_token: ${{ secrets.COPILOT_PAT }}
