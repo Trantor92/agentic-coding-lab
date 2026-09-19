@@ -81,21 +81,35 @@ GitHub Copilot Coding Agent richiede un token licenziato per essere invocato aut
 
 ## 3. Modalità di Esecuzione per gli Agenti
 
-In base agli strumenti abilitati sul tuo account/organizzazione:
+In base agli strumenti abilitati sul tuo account/organizzazione e alle label assegnate all'issue:
 
-- **GitHub Copilot Coding Agent (Cloud / Web)**: Assegnando l'issue o menzionando `@copilot`, Copilot in GitHub avvia la sessione cloud per generare la soluzione e aprire la PR.
-- **Agent CLI Locale (Copilot CLI / Claude Code)**: Lo sviluppatore può lanciare la CLI indicando il numero dell'issue:
+### A. Routing Ibrido dei Runner (Cloud vs Local Self-Hosted)
 
-  ```bash
-  gh issue view <numero>
-  git checkout -b agent/issue-<numero>
-  # L'agente lavora, testa e crea la PR:
-  gh pr create --fill
-  ```
+Il workflow `.github/workflows/agent-issue-resolver.yml` instrada l'esecuzione in base alle label dell'issue:
 
-- **Custom Runner / CI Action**: Il workflow richiama il modulo `scripts/dispatch-agent.mjs` che gestisce la logica di notifica e formattazione con supporto `--dry-run` per i test locali:
+- **Runner Locale (`runner:local`)**: Esegue il job sul runner self-hosted collegato (`runs-on: self-hosted`), richiamando l'Agent Harness (`scripts/run-agent-harness.mjs`) con pieno supporto delle skill (`skills/tdd/`, `skills/code-review/`), modello configurato e creazione automatica della PR.
+- **Runner Cloud (`runner:cloud` o default)**: Esegue il job sui runner GitHub-hosted (`ubuntu-latest`), delegando l'assegnazione al Copilot Cloud Coding Agent tramite `scripts/dispatch-agent.mjs`.
 
-  ```bash
-  # Test locale del dispatcher in modalità dry-run
-  node scripts/dispatch-agent.mjs --issue 42 --title "Esempio task" --dry-run
-  ```
+### B. Profili di Modello e Gestione Budget Token
+
+Puoi controllare il modello LLM assegnando le relative label all'issue durante il triage:
+
+- **`model:fast`** (default): Modelli veloci ed economici (es. `gpt-5-mini` per Copilot CLI, `claude-3-5-haiku` per Claude Code).
+- **`model:smart`**: Modelli avanzati per compiti complessi di architettura e refactoring (es. `claude-sonnet-5` per Copilot CLI, `claude-3-7-sonnet` per Claude Code).
+
+### C. Esecuzione da Terminale Locale (Developer CLI)
+
+Puoi lanciare l'Agent Harness direttamente in locale per risolvere una qualsiasi issue:
+
+```bash
+# Esecuzione in modalità dry-run (verifica prompt e configurazione)
+npm run agent:solve -- --issue 42 --dry-run
+
+# Esecuzione reale con Copilot CLI e modello smart
+npm run agent:solve -- --issue 42 --adapter copilot --model smart
+
+# Esecuzione reale con Claude Code CLI
+npm run agent:solve -- --issue 42 --adapter claude --model fast
+```
+
+Per i dettagli completi delle decisioni architetturali, consulta `docs/adr/0001-hybrid-agent-harness-and-runner-routing.md`.

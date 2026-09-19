@@ -18,6 +18,9 @@ const requiredFiles = [
   "package.json",
   "scripts/validate-pr.mjs",
   "tests/validate-pr.test.mjs",
+  "scripts/run-agent-harness.mjs",
+  "tests/run-agent-harness.test.mjs",
+  "docs/adr/0001-hybrid-agent-harness-and-runner-routing.md",
   ".github/workflows/pr-compliance.yml",
 ];
 
@@ -51,6 +54,12 @@ if (!packageJson.scripts?.["test:unit"]) {
   errors.push("package.json must define a test:unit script for PR validator coverage.");
 } else {
   console.log("  ✓ Found package.json test:unit script");
+}
+
+if (!packageJson.scripts?.["agent:solve"]) {
+  errors.push("package.json must define an agent:solve script for agent harness execution.");
+} else {
+  console.log("  ✓ Found package.json agent:solve script");
 }
 
 if (!workflowContents.includes("Fail job when PR is not compliant")) {

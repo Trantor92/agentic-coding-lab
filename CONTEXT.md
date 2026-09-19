@@ -24,6 +24,18 @@ _Avoid_: Bot, AI worker, copilot assistant
 A canonical triage role and issue label indicating an issue is fully specified and ready for autonomous agent execution.
 _Avoid_: AFK-ready, copilot-ready, auto-fix, pending-agent
 
+**Runner Route**:
+The target execution environment for an automated agent task (`runner:local` for self-hosted runners, `runner:cloud` for GitHub-hosted runners), selected via issue labels.
+_Avoid_: Runner target, environment tag, worker mode
+
+**Model Profile**:
+The operational compute tier (`model:fast`, `model:smart`) assigned to an issue via labels, mapping to specific LLM configurations to control token cost and reasoning capacity.
+_Avoid_: LLM tier, AI size, model selection
+
+**Agent Harness**:
+The unified execution module orchestrating agent CLI adapters (GitHub Copilot CLI, Claude Code), model profiles, skill injection, test execution, and two-axis code review.
+_Avoid_: Runner script, agent wrapper, CLI driver
+
 **Squash and Merge**:
 The mandatory git integration strategy combining all commits of a Pull Request into a single conventional commit on the `main` branch.
 _Avoid_: Merge commit, rebase-and-merge, fast-forward merge
