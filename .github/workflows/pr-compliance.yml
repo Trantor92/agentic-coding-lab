@@ -1,0 +1,132 @@
+name: PR Compliance
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate-pr:
+    name: Validate Pull Request Compliance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate PR metadata
+        id: validate_pr
+        continue-on-error: true
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set +e
+          node scripts/validate-pr.mjs > pr-compliance-report.txt 2>&1
+          exit_code=$?
+          cat pr-compliance-report.txt
+          {
+            echo "exit_code=$exit_code"
+            echo "report<<REPORT_EOF"
+            cat pr-compliance-report.txt
+            echo "REPORT_EOF"
+          } >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Post or update PR compliance comment
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/github-script@v7
+        env:
+          EXIT_CODE: ${{ steps.validate_pr.outputs.exit_code }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_REPORT: ${{ steps.validate_pr.outputs.report }}
+        with:
+          script: |
+            const escapeHtml = (value) =>
+              String(value ?? "")
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;");
+
+            const marker = "<!-- agentic-coding-lab:pr-compliance-workflow-comment:v1 -->";
+            const report = escapeHtml(process.env.PR_REPORT);
+            const status = Number(process.env.EXIT_CODE || "1") === 0
+              ? "✅ Passed"
+              : "❌ Failed";
+            const safeTitle = escapeHtml(process.env.PR_TITLE);
+            const safeBranch = escapeHtml(process.env.PR_BRANCH);
+            const body = [
+              marker,
+              `## PR compliance check: ${status}`,
+              "",
+              `- Title: <code>${safeTitle}</code>`,
+              `- Branch: <code>${safeBranch}</code>`,
+              "",
+              "<pre>",
+              report,
+              "</pre>",
+            ].join("\n");
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            let existing;
+
+            for (let page = 1; !existing; page += 1) {
+              const response = await github.rest.issues.listComments({
+                owner,
+                repo,
+                issue_number,
+                per_page: 100,
+                page,
+              });
+
+              existing = response.data.find(
+                (comment) =>
+                  comment.user?.login === "github-actions[bot]" &&
+                  comment.body?.includes(marker),
+              );
+
+              if (response.data.length < 100) {
+                break;
+              }
+            }
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }
+
+      - name: Explain fork comment limitation
+        if: github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          {
+            echo "PR compliance comment skipped for a forked pull request."
+            echo "The validator still ran, but pull_request workflows use a read-only token on forks."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail job when PR is not compliant
+        if: steps.validate_pr.outputs.exit_code != '0'
+        run: |
+          echo "PR compliance validation failed."
+          exit 1
