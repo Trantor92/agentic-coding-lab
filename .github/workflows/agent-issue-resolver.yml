@@ -2,7 +2,7 @@ name: Agent Issue Resolver
 
 on:
   issues:
-    types: [opened, labeled]
+    types: [labeled]
 
 permissions:
   contents: write
@@ -11,9 +11,7 @@ permissions:
 
 jobs:
   dispatch-agent:
-    if: >
-      github.event.label.name == 'ready-for-agent' ||
-      contains(github.event.issue.labels.*.name, 'ready-for-agent')
+    if: github.event.label.name == 'ready-for-agent'
     runs-on: ubuntu-latest
 
     steps:
