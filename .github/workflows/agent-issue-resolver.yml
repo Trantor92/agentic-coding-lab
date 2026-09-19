@@ -10,8 +10,47 @@ permissions:
   pull-requests: write
 
 jobs:
-  dispatch-agent:
-    if: github.event.label.name == 'ready-for-agent'
+  resolve-local:
+    name: Resolve Issue via Local Runner
+    if: >-
+      contains(github.event.issue.labels.*.name, 'ready-for-agent') &&
+      contains(github.event.issue.labels.*.name, 'runner:local')
+    runs-on: self-hosted
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Run Agent Harness on Local Runner
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body || '' }}
+          MODEL_PROFILE: ${{ contains(github.event.issue.labels.*.name, 'model:smart') && 'smart' || 'fast' }}
+        run: |
+          node scripts/run-agent-harness.mjs \
+            --issue "$ISSUE_NUMBER" \
+            --title "$ISSUE_TITLE" \
+            --body "$ISSUE_BODY" \
+            --runner local \
+            --model "$MODEL_PROFILE"
+
+  resolve-cloud:
+    name: Resolve Issue via Cloud Agent
+    if: >-
+      contains(github.event.issue.labels.*.name, 'ready-for-agent') &&
+      !contains(github.event.issue.labels.*.name, 'runner:local')
     runs-on: ubuntu-latest
 
     steps:
@@ -25,7 +64,7 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Acknowledge and Assign Agent
+      - name: Acknowledge and Assign Cloud Agent
         env:
           GH_TOKEN: ${{ secrets.COPILOT_PAT || secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}

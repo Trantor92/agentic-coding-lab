@@ -33,10 +33,12 @@ Il repository include le skill ingegneristiche di [mattpocock/skills](https://gi
 
 ## Automazioni & Risoluzione Issue
 
-Il repository supporta la presa in carico e la risoluzione automatica delle issue:
+Il repository supporta la presa in carico e la risoluzione automatica delle issue con architettura ibrida:
 
-- **Etichetta `ready-for-agent`**: applicando questa label a una issue, il workflow `.github/workflows/agent-issue-resolver.yml` assegna automaticamente il task a GitHub Copilot Coding Agent o notifica gli agenti via CLI.
-- **Configurazione e Setup**: Consulta la guida dettagliata passo-passo in [`docs/agents/automation.md`](docs/agents/automation.md) per impostare i permessi di Actions, il secret `COPILOT_PAT` e le opzioni di Squash & Merge.
+- **Etichetta `ready-for-agent`**: attiva il workflow `.github/workflows/agent-issue-resolver.yml`.
+- **Routing Ibrido dei Runner**: supporta l'esecuzione su runner self-hosted (`runner:local`) o cloud (`runner:cloud`).
+- **Profili di Modello**: controllo dei consumi tramite label `model:fast` (default) e `model:smart`.
+- **Configurazione e Setup**: Consulta la guida dettagliata passo-passo in [`docs/agents/automation.md`](docs/agents/automation.md) e la decisione architetturale in [`docs/adr/0001-hybrid-agent-harness-and-runner-routing.md`](docs/adr/0001-hybrid-agent-harness-and-runner-routing.md).
 
 ## Stato
 
