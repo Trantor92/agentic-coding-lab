@@ -11,7 +11,8 @@ Acceptance criteria:
 
 Links:
 - Related failures: issue/17 and workflow run 35519955965
-- Local PR draft: .github/PULL_REQUESTS/agent-issue-18-pr.md
+- Resolved by: PR #20
 
-Labels: ready-for-agent, runner:local, enhancement
+Labels: ready-for-human, runner:local, enhancement
 Assignees: @Trantor92
+
