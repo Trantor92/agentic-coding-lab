@@ -21,12 +21,16 @@ _Avoid_: Bot, AI worker, copilot assistant
 ### Triage & Workflow
 
 **Ready-for-Agent**:
-A canonical triage role and issue label indicating an issue is fully specified and ready for autonomous agent execution.
+A canonical triage role and issue label indicating an issue is fully specified and ready for autonomous agent execution on the local self-hosted runner.
 _Avoid_: AFK-ready, copilot-ready, auto-fix, pending-agent
 
-**Runner Route**:
-The target execution environment for an automated agent task (`runner:local` for self-hosted runners, `runner:cloud` for GitHub-hosted runners), selected via issue labels.
-_Avoid_: Runner target, environment tag, worker mode
+**Local Runner**:
+The dedicated self-hosted execution environment hosting the Agent Harness on local hardware via GitHub Actions runner or CLI invocation.
+_Avoid_: Cloud runner, cloud agent, remote worker, runner route
+
+**Worktree Isolation**:
+The concurrency mechanism leveraging `git worktree` to isolate each issue's working directory, branch lifecycle, and execution context, enabling parallel issue resolution without repo pollution.
+_Avoid_: Repo clone, dirty workspace, branch swapping
 
 **Model Profile**:
 The operational compute tier (`model:fast`, `model:smart`) assigned to an issue via labels, mapping to specific LLM configurations to control token cost and reasoning capacity.

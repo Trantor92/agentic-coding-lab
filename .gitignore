@@ -5,6 +5,9 @@ Thumbs.db
 # Dependencies
 node_modules/
 
+# Agent Worktrees
+.worktrees/
+
 # Logs
 npm-debug.log*
 yarn-debug.log*

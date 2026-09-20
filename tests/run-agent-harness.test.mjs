@@ -127,5 +127,6 @@ const cliResult = spawnSync(process.execPath, [
 assert.equal(cliResult.status, 0, "CLI dry-run should exit with 0");
 assert.match(cliResult.stdout, /Agent Harness dry-run execution/i);
 assert.match(cliResult.stdout, /agent\/issue-42/i);
+assert.match(cliResult.stdout, /\.worktrees[/\\]issue-42/i, "Dry run must display worktree isolation path");
 
 console.log("✅ Agent Harness tests passed successfully.");

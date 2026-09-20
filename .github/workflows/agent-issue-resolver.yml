@@ -10,11 +10,9 @@ permissions:
   pull-requests: write
 
 jobs:
-  resolve-local:
-    name: Resolve Issue via Local Runner
-    if: >-
-      contains(github.event.issue.labels.*.name, 'ready-for-agent') &&
-      contains(github.event.issue.labels.*.name, 'runner:local')
+  resolve-agent:
+    name: Resolve Issue via Local Runner (Worktree Isolated)
+    if: contains(github.event.issue.labels.*.name, 'ready-for-agent')
     runs-on: self-hosted
 
     steps:
@@ -45,38 +43,3 @@ jobs:
             --body "$ISSUE_BODY" \
             --runner local \
             --model "$MODEL_PROFILE"
-
-  resolve-cloud:
-    name: Resolve Issue via Cloud Agent
-    if: >-
-      contains(github.event.issue.labels.*.name, 'ready-for-agent') &&
-      !contains(github.event.issue.labels.*.name, 'runner:local')
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Acknowledge and Assign Cloud Agent
-        env:
-          GH_TOKEN: ${{ secrets.COPILOT_PAT || secrets.GITHUB_TOKEN }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-        run: |
-          node scripts/dispatch-agent.mjs --issue "$ISSUE_NUMBER" --title "$ISSUE_TITLE"
-
-      - name: Assign Issue to Copilot Coding Agent
-        if: env.COPILOT_PAT != ''
-        env:
-          COPILOT_PAT: ${{ secrets.COPILOT_PAT }}
-        uses: otto-de/assign_issue_toCopilot_action@v1.0.1
-        with:
-          issue_number: ${{ github.event.issue.number }}
-          github_token: ${{ secrets.COPILOT_PAT }}

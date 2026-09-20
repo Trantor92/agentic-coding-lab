@@ -83,18 +83,21 @@ GitHub Copilot Coding Agent richiede un token licenziato per essere invocato aut
 
 In base agli strumenti abilitati sul tuo account/organizzazione e alle label assegnate all'issue:
 
-### A. Routing Ibrido dei Runner (Cloud vs Local Self-Hosted)
+### A. Esecuzione Dedicata su Local Self-Hosted Runner con Worktree Isolation
 
-Il workflow `.github/workflows/agent-issue-resolver.yml` instrada l'esecuzione in base alle label dell'issue:
+Il workflow `.github/workflows/agent-issue-resolver.yml` esegue tutti i task contrassegnati con `ready-for-agent` direttamente sul runner self-hosted locale (`runs-on: self-hosted`):
 
-- **Runner Locale (`runner:local`)**: Esegue il job sul runner self-hosted collegato (`runs-on: self-hosted`), richiamando l'Agent Harness (`scripts/run-agent-harness.mjs`) con pieno supporto delle skill (`skills/tdd/`, `skills/code-review/`), modello configurato e creazione automatica della PR.
-- **Runner Cloud (`runner:cloud` o default)**: Esegue il job sui runner GitHub-hosted (`ubuntu-latest`), delegando l'assegnazione al Copilot Cloud Coding Agent tramite `scripts/dispatch-agent.mjs`.
+- **Isolamento Worktree**: Ogni issue viene elaborata in una cartella isolata `.worktrees/issue-<numero>`, permettendo esecuzioni concorrenti senza sporcare o bloccare il working tree principale.
+- **Supporto Completo Skill & CLI**: Esegue l'Agent Harness (`scripts/run-agent-harness.mjs`) con pieno supporto delle skill (`skills/tdd/`, `skills/code-review/`), modello configurato e creazione automatica della PR.
+- **Pulizia Automatica**: Al termine (o in caso di errore), il worktree viene automaticamente rimosso e potato (`git worktree remove --force`).
+
+Per la guida completa al setup del runner, consulta `docs/agents/self-hosted-runner.md`.
 
 ### B. Profili di Modello e Gestione Budget Token
 
 Puoi controllare il modello LLM assegnando le relative label all'issue durante il triage:
 
-- **`model:fast`** (default): Modelli veloci ed economici (es. `gpt-5-mini` per Copilot CLI, `claude-3-5-haiku` per Claude Code).
+- **`model:fast`** (default): Modelli veloci ed economici (es. `gpt-5-mini` per Copilot CLI, `claude-3-5-haiku` per Claude Code). Utilizzato automaticamente se non è specificata alcuna label di modello.
 - **`model:smart`**: Modelli avanzati per compiti complessi di architettura e refactoring (es. `claude-sonnet-5` per Copilot CLI, `claude-3-7-sonnet` per Claude Code).
 
 ### C. Esecuzione da Terminale Locale (Developer CLI)
@@ -102,7 +105,10 @@ Puoi controllare il modello LLM assegnando le relative label all'issue durante i
 Puoi lanciare l'Agent Harness direttamente in locale per risolvere una qualsiasi issue:
 
 ```bash
-# Esecuzione in modalità dry-run (verifica prompt e configurazione)
+# Verifica prerequisiti del runner
+npm run check:runner
+
+# Esecuzione in modalità dry-run (verifica prompt, worktree e configurazione)
 npm run agent:solve -- --issue 42 --dry-run
 
 # Esecuzione reale con Copilot CLI e modello smart
@@ -112,4 +118,4 @@ npm run agent:solve -- --issue 42 --adapter copilot --model smart
 npm run agent:solve -- --issue 42 --adapter claude --model fast
 ```
 
-Per i dettagli completi delle decisioni architetturali, consulta `docs/adr/0001-hybrid-agent-harness-and-runner-routing.md`.
+Per i dettagli completi delle decisioni architetturali, consulta `docs/adr/0002-local-runner-and-worktree-isolation.md`.
