@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { execFileSync, spawnSync } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildPrBody, buildBranchName } from "./validate-pr.mjs";
+import { buildBranchName, buildPrBody } from "./validate-pr.mjs";
 
 export const MODEL_MAP = {
   copilot: {
@@ -95,19 +96,113 @@ export function fetchIssueMetadata({ issueNumber, dryRun = false }) {
 }
 
 /**
+ * Create an isolated Git worktree for the issue to ensure zero host collision.
+ */
+export function createWorktree({ issueNumber, targetBranch, repoRoot }) {
+  const worktreePath = path.resolve(repoRoot, ".worktrees", `issue-${issueNumber}`);
+
+  console.log(`🌲 Creating isolated Git worktree at: ${worktreePath}`);
+
+  // Cleanup existing directory or registered worktree if present
+  try {
+    execFileSync("git", ["worktree", "remove", "--force", worktreePath], {
+      cwd: repoRoot,
+      stdio: "pipe",
+    });
+  } catch {
+    // Ignore if not present
+  }
+
+  if (fs.existsSync(worktreePath)) {
+    fs.rmSync(worktreePath, { recursive: true, force: true });
+  }
+
+  // Create worktree on target branch based on current HEAD
+  execFileSync("git", ["worktree", "add", "-B", targetBranch, worktreePath, "HEAD"], {
+    cwd: repoRoot,
+    stdio: "inherit",
+  });
+
+  // Symlink node_modules from repo root to avoid re-install overhead
+  const rootNodeModules = path.resolve(repoRoot, "node_modules");
+  const worktreeNodeModules = path.resolve(worktreePath, "node_modules");
+  if (fs.existsSync(rootNodeModules) && !fs.existsSync(worktreeNodeModules)) {
+    try {
+      fs.symlinkSync(rootNodeModules, worktreeNodeModules, "junction");
+      console.log("🔗 Symlinked node_modules into isolated worktree.");
+    } catch (symErr) {
+      console.warn(`⚠️ Warning: Failed to symlink node_modules: ${symErr.message}`);
+    }
+  }
+
+  // Ensure skill symlinks inside the worktree are synced
+  const skillsScript = path.resolve(worktreePath, "scripts/skills-manager.mjs");
+  if (fs.existsSync(skillsScript)) {
+    try {
+      execFileSync("node", [skillsScript, "sync"], { cwd: worktreePath, stdio: "pipe" });
+      console.log("🔄 Synced engineering skills inside worktree.");
+    } catch {
+      // Non-blocking
+    }
+  }
+
+  return worktreePath;
+}
+
+/**
+ * Clean up and prune isolated Git worktree.
+ */
+export function cleanupWorktree({ worktreePath, repoRoot }) {
+  if (!worktreePath) return;
+
+  console.log(`🧹 Cleaning up Git worktree at: ${worktreePath}`);
+  try {
+    execFileSync("git", ["worktree", "remove", "--force", worktreePath], {
+      cwd: repoRoot,
+      stdio: "pipe",
+    });
+  } catch {
+    // Ignore error if already removed
+  }
+
+  try {
+    execFileSync("git", ["worktree", "prune"], {
+      cwd: repoRoot,
+      stdio: "pipe",
+    });
+  } catch {
+    // Ignore error
+  }
+
+  if (fs.existsSync(worktreePath)) {
+    try {
+      fs.rmSync(worktreePath, { recursive: true, force: true });
+    } catch {
+      // Ignore
+    }
+  }
+}
+
+/**
  * Ensure all agent modifications are committed and verify branch has commits against main.
  */
-export function ensureGitCommit({ issueNumber, title = "" }) {
-  const statusOut = execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim();
+export function ensureGitCommit({ issueNumber, title = "", cwd = process.cwd() }) {
+  const statusOut = execFileSync("git", ["status", "--porcelain"], {
+    cwd,
+    encoding: "utf8",
+  }).trim();
   if (statusOut) {
     console.log("📝 Staging and committing changes made by agent...");
-    execFileSync("git", ["add", "-A"], { stdio: "inherit" });
+    execFileSync("git", ["add", "-A"], { cwd, stdio: "inherit" });
     const commitMsg = `feat(agent): resolve issue #${issueNumber}${title ? ` - ${title}` : ""}\n\nCo-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`;
-    execFileSync("git", ["commit", "-m", commitMsg], { stdio: "inherit" });
+    execFileSync("git", ["commit", "-m", commitMsg], { cwd, stdio: "inherit" });
   }
 
   const commitCount = Number(
-    execFileSync("git", ["rev-list", "--count", "main..HEAD"], { encoding: "utf8" }).trim(),
+    execFileSync("git", ["rev-list", "--count", "main..HEAD"], {
+      cwd,
+      encoding: "utf8",
+    }).trim(),
   );
 
   if (commitCount === 0) {
@@ -138,7 +233,7 @@ export function parseHarnessArgs(argv = process.argv.slice(2), env = process.env
   let issueNumber = null;
   let title = env.ISSUE_TITLE || "";
   let body = env.ISSUE_BODY || "";
-  let runner = env.RUNNER_ROUTE || "local";
+  let runner = "local";
   let adapter = env.AGENT_ADAPTER || "copilot";
   let modelProfile = env.MODEL_PROFILE || "fast";
   let dryRun = false;
@@ -180,6 +275,13 @@ export function runAgentHarness(options = parseHarnessArgs()) {
     return 1;
   }
 
+  let repoRoot = process.cwd();
+  try {
+    repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim();
+  } catch {
+    // fallback to cwd
+  }
+
   // Auto-fetch metadata if title or body is missing
   if (!title || !body) {
     const fetched = fetchIssueMetadata({ issueNumber, dryRun });
@@ -199,29 +301,31 @@ export function runAgentHarness(options = parseHarnessArgs()) {
   const prompt = buildAgentPrompt({ issueNumber, title, body });
   const cliCmd = buildAgentCliCommand({ adapter, model, prompt });
 
-  console.log("🚀 Starting Agent Harness...");
+  console.log("🚀 Starting Agent Harness (Worktree Isolated)...");
   console.log(`📌 Issue: #${issueNumber} ("${title || "Untitled"}")`);
-  console.log(`📌 Runner Route: ${runner}`);
+  console.log(`📌 Runner: ${runner} (Self-Hosted)`);
   console.log(`📌 Adapter: ${adapter} (Model: ${model})`);
   console.log(`📌 Target Branch: ${targetBranch}`);
 
   if (dryRun) {
     console.log("🔍 [DRY-RUN] Agent Harness dry-run execution:");
     console.log(`  - Target branch: ${targetBranch}`);
+    console.log(`  - Worktree directory: ${path.resolve(repoRoot, ".worktrees", `issue-${issueNumber}`)}`);
     console.log(`  - Command: ${cliCmd.command} ${cliCmd.args.join(" ")}`);
     console.log("  - PR Description:");
     console.log(buildPrBody({ issueNumber, title, adapter, model }));
     return 0;
   }
 
+  let worktreePath = null;
   try {
-    // 1. Checkout or create agent branch
-    console.log(`🌿 Preparing branch ${targetBranch}...`);
-    execFileSync("git", ["checkout", "-B", targetBranch], { stdio: "inherit" });
+    // 1. Create isolated Git worktree
+    worktreePath = createWorktree({ issueNumber, targetBranch, repoRoot });
 
-    // 2. Execute Agent CLI
-    console.log(`🤖 Executing agent CLI (${cliCmd.command})...`);
+    // 2. Execute Agent CLI inside the worktree
+    console.log(`🤖 Executing agent CLI (${cliCmd.command}) inside worktree...`);
     const agentRes = spawnSync(cliCmd.command, cliCmd.args, {
+      cwd: worktreePath,
       stdio: "inherit",
       encoding: "utf8",
     });
@@ -230,17 +334,20 @@ export function runAgentHarness(options = parseHarnessArgs()) {
       throw new Error(`Agent CLI execution failed with code ${agentRes.status}`);
     }
 
-    // 3. Stage & Commit any changes and verify commits exist
+    // 3. Stage & Commit any changes inside worktree
     console.log("📦 Verifying changes and commits...");
-    ensureGitCommit({ issueNumber, title });
+    ensureGitCommit({ issueNumber, title, cwd: worktreePath });
 
-    // 4. Run validation tests
-    console.log("🧪 Running local test suite (npm test)...");
-    execFileSync("npm", ["test"], { stdio: "inherit" });
+    // 4. Run validation tests inside worktree
+    console.log("🧪 Running test suite inside worktree (npm test)...");
+    execFileSync("npm", ["test"], { cwd: worktreePath, stdio: "inherit" });
 
-    // 5. Push branch and create Pull Request
+    // 5. Push branch and create Pull Request from worktree
     console.log("📤 Pushing branch and creating Pull Request...");
-    execFileSync("git", ["push", "-u", "origin", targetBranch], { stdio: "inherit" });
+    execFileSync("git", ["push", "-u", "origin", targetBranch], {
+      cwd: worktreePath,
+      stdio: "inherit",
+    });
 
     const prTitle = `feat(agent): resolve issue #${issueNumber}${title ? ` - ${title}` : ""}`;
     const prBodyContent = buildPrBody({ issueNumber, title, adapter, model });
@@ -259,7 +366,7 @@ export function runAgentHarness(options = parseHarnessArgs()) {
         "--base",
         "main",
       ],
-      { stdio: "inherit" },
+      { cwd: worktreePath, stdio: "inherit" },
     );
 
     console.log(`✅ Successfully solved issue #${issueNumber} and created PR.`);
@@ -274,14 +381,27 @@ export function runAgentHarness(options = parseHarnessArgs()) {
       execFileSync("gh", ["issue", "comment", String(issueNumber), "--body", failBody], {
         stdio: "inherit",
       });
-      execFileSync("gh", ["issue", "edit", String(issueNumber), "--remove-label", "ready-for-agent", "--add-label", "ready-for-human"], {
-        stdio: "inherit",
-      });
+      execFileSync(
+        "gh",
+        [
+          "issue",
+          "edit",
+          String(issueNumber),
+          "--remove-label",
+          "ready-for-agent",
+          "--add-label",
+          "ready-for-human",
+        ],
+        { stdio: "inherit" },
+      );
     } catch (commentErr) {
       console.error(`⚠️ Failed to update issue labels/comment: ${commentErr.message}`);
     }
 
     return 1;
+  } finally {
+    // Always clean up isolated worktree to prevent workspace disk pollution
+    cleanupWorktree({ worktreePath, repoRoot });
   }
 }
 

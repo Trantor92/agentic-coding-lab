@@ -9,7 +9,8 @@
     "lint:md": "npx markdownlint-cli '**/*.md' --ignore 'node_modules'",
     "lint:yaml": "yamllint .",
     "agent:solve": "node scripts/run-agent-harness.mjs",
-    "test:unit": "node tests/dispatch-agent.test.mjs && node tests/validate-pr.test.mjs && node tests/run-agent-harness.test.mjs",
+    "check:runner": "node scripts/check-runner-prerequisites.mjs",
+    "test:unit": "node tests/dispatch-agent.test.mjs && node tests/validate-pr.test.mjs && node tests/run-agent-harness.test.mjs && node tests/check-runner-prerequisites.test.mjs",
     "test:pr": "node scripts/validate-pr.mjs --title 'feat: sample' --body 'Closes Trantor92/agentic-coding-lab#1' --dry-run",
     "test:structure": "node scripts/validate-structure.mjs",
     "test": "npm run lint:md && npm run lint:yaml && npm run test:unit && npm run test:structure"

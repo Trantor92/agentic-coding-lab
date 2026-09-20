@@ -10,13 +10,11 @@ The skills speak in terms of five canonical triage roles. This file maps those r
 | `ready-for-human`          | `ready-for-human`    | Requires human implementation            |
 | `wontfix`                  | `wontfix`            | Will not be actioned                     |
 
-## Execution Routing and Model Profile Labels
+## Model Profile Labels
 
 | Label          | Type          | Purpose                                                            |
 | -------------- | ------------- | ------------------------------------------------------------------ |
-| `runner:local` | Runner Route  | Executes the Agent Harness on a connected self-hosted runner       |
-| `runner:cloud` | Runner Route  | Executes the Cloud Agent workflow on GitHub-hosted runners         |
-| `model:fast`   | Model Profile | Uses lightweight, economical compute tier (e.g. `gpt-5-mini`)      |
+| `model:fast`   | Model Profile | Uses lightweight, economical compute tier (default: `gpt-5-mini`)  |
 | `model:smart`  | Model Profile | Uses high-reasoning compute tier (e.g. `claude-sonnet-5`)          |
 
 When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
