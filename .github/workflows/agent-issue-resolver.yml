@@ -29,9 +29,19 @@ jobs:
       - name: Install dependencies
         run: npm ci || npm install
 
+      - name: Prepare Copilot CLI in non-interactive mode
+        env:
+          # Copilot CLI will read this token and bypass interactive login
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
+        run: |
+          echo "Preparing Copilot CLI token in environment"
+          # Diagnostic: print copilot version if available
+          copilot --version || echo "copilot CLI not found on runner"
+
       - name: Run Agent Harness on Local Runner
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body || '' }}
