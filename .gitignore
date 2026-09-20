@@ -8,6 +8,10 @@ node_modules/
 # Agent Worktrees
 .worktrees/
 
+# Actions Runner
+actions-runner/
+.runner*
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
