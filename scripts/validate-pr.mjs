@@ -130,6 +130,35 @@ function printUsage() {
   );
 }
 
+/**
+ * Build helpers for PR conformity and formatting. These live here so other scripts can reuse
+ * a single source of truth for PR titles, branch names, and PR body formatting.
+ */
+export function buildPrTitle({ type = "feat", scope, description = "" } = {}) {
+  const scopePart = scope ? `(${scope})` : "";
+  return `${type}${scopePart}: ${description}`.trim();
+}
+
+export function buildBranchName({ issueNumber, prefix = "agent" } = {}) {
+  if (!issueNumber) return `${prefix}/unknown`;
+  return `${prefix}/issue-${issueNumber}`;
+}
+
+export function buildPrBody({ issueNumber, title = "", adapter = "copilot", model = "gpt-5-mini", reviewSummary = "Verified with automated TDD and two-axis code review (Standards + Spec)." } = {}) {
+  return `### 🎯 Objective
+Resolve Issue #${issueNumber}${title ? `: ${title}` : ""}.
+
+### 🤖 Agent Execution Details
+- **Agent Harness Adapter**: \`${adapter}\`
+- **Model**: \`${model}\`
+- **Skills Applied**: \`skills/tdd/SKILL.md\`, \`skills/code-review/SKILL.md\`
+
+### 🔍 Code Review & Verification
+${reviewSummary}
+
+Closes #${issueNumber}`;
+}
+
 export function runCli(options = parseOptions()) {
   if (options.help) {
     printUsage();

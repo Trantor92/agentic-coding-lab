@@ -3,6 +3,7 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildPrBody, buildBranchName } from "./validate-pr.mjs";
 
 export const MODEL_MAP = {
   copilot: {
@@ -116,29 +117,7 @@ export function ensureGitCommit({ issueNumber, title = "" }) {
   return commitCount;
 }
 
-/**
- * Format the Pull Request body adhering to PR compliance requirements.
- */
-export function formatPullRequestBody({
-  issueNumber,
-  title = "",
-  adapter = "copilot",
-  model = "gpt-5-mini",
-  reviewSummary = "Verified with automated TDD and two-axis code review (Standards + Spec).",
-}) {
-  return `### 🎯 Objective
-Resolve Issue #${issueNumber}${title ? `: ${title}` : ""}.
-
-### 🤖 Agent Execution Details
-- **Agent Harness Adapter**: \`${adapter}\`
-- **Model**: \`${model}\`
-- **Skills Applied**: \`skills/tdd/SKILL.md\`, \`skills/code-review/SKILL.md\`
-
-### 🔍 Code Review & Verification
-${reviewSummary}
-
-Closes #${issueNumber}`;
-}
+// PR body formatting builders are provided by scripts/validate-pr.mjs (buildPrBody, buildBranchName)
 
 /**
  * Format failure diagnostic comment when agent execution fails.
@@ -216,7 +195,7 @@ export function runAgentHarness(options = parseHarnessArgs()) {
   }
 
   const model = resolveModel({ adapter, modelProfile });
-  const targetBranch = `agent/issue-${issueNumber}`;
+  const targetBranch = buildBranchName({ issueNumber });
   const prompt = buildAgentPrompt({ issueNumber, title, body });
   const cliCmd = buildAgentCliCommand({ adapter, model, prompt });
 
@@ -231,7 +210,7 @@ export function runAgentHarness(options = parseHarnessArgs()) {
     console.log(`  - Target branch: ${targetBranch}`);
     console.log(`  - Command: ${cliCmd.command} ${cliCmd.args.join(" ")}`);
     console.log("  - PR Description:");
-    console.log(formatPullRequestBody({ issueNumber, title, adapter, model }));
+    console.log(buildPrBody({ issueNumber, title, adapter, model }));
     return 0;
   }
 
@@ -264,7 +243,7 @@ export function runAgentHarness(options = parseHarnessArgs()) {
     execFileSync("git", ["push", "-u", "origin", targetBranch], { stdio: "inherit" });
 
     const prTitle = `feat(agent): resolve issue #${issueNumber}${title ? ` - ${title}` : ""}`;
-    const prBodyContent = formatPullRequestBody({ issueNumber, title, adapter, model });
+    const prBodyContent = buildPrBody({ issueNumber, title, adapter, model });
 
     execFileSync(
       "gh",
