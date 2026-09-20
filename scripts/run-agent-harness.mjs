@@ -324,14 +324,22 @@ export function runAgentHarness(options = parseHarnessArgs()) {
 
     // 2. Execute Agent CLI inside the worktree
     console.log(`🤖 Executing agent CLI (${cliCmd.command}) inside worktree...`);
-    const agentRes = spawnSync(cliCmd.command, cliCmd.args, {
-      cwd: worktreePath,
-      stdio: "inherit",
-      encoding: "utf8",
-    });
 
-    if (agentRes.status !== 0) {
-      throw new Error(`Agent CLI execution failed with code ${agentRes.status}`);
+    // Allow test adapter or explicit skip to avoid invoking external agent CLI in CI/local tests.
+    // Use env USE_TEST_ADAPTER=true or SKIP_AGENT_CLI=true to opt-out of real CLI calls.
+    let agentRes = { status: 0 };
+    if (process.env.USE_TEST_ADAPTER === 'true' || process.env.SKIP_AGENT_CLI === 'true') {
+      console.log("ℹ️ Using test adapter / skipping external agent CLI invocation (USE_TEST_ADAPTER=true or SKIP_AGENT_CLI=true).");
+    } else {
+      agentRes = spawnSync(cliCmd.command, cliCmd.args, {
+        cwd: worktreePath,
+        stdio: "inherit",
+        encoding: "utf8",
+      });
+
+      if (agentRes.status !== 0) {
+        throw new Error(`Agent CLI execution failed with code ${agentRes.status}`);
+      }
     }
 
     // 3. Stage & Commit any changes inside worktree
